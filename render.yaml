@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: xnovest-meter-portal
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWTSECRET
+        generateValue: true

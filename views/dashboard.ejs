@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Xnovest Africa - Meter Data Portal</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3)), 
+                        url('1.jpg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c7744 0%, #5a9e6f 100%);
+            color: white;
+            padding: 30px 40px;
+            text-align: center;
+            position: relative;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .header h2 {
+            font-size: 1.2em;
+            font-weight: 300;
+            opacity: 0.9;
+        }
+
+        .user-section {
+            position: absolute;
+            top: 30px;
+            right: 40px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .welcome {
+            color: white;
+            font-size: 0.9em;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 0.9em;
+            transition: all 0.3s ease;
+            display: inline-block;
+        }
+
+        .btn-logout {
+            background: rgba(255,255,255,0.2);
+            color: white;
+        }
+
+        .btn-logout:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .dashboard-content {
+            padding: 40px;
+        }
+
+        .meter-selector-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .meter-selector {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .meter-selector select {
+            padding: 10px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            min-width: 250px;
+        }
+
+        .btn-primary {
+            background: #2c7744;
+            color: white;
+            padding: 10px 20px;
+        }
+
+        .btn-primary:hover {
+            background: #236338;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #545b62;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .meter-info-card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 30px;
+            border-left: 5px solid #2c7744;
+        }
+
+        .meter-info-card h3 {
+            color: #2c7744;
+            margin-bottom: 15px;
+            font-size: 1.4em;
+        }
+
+        .meter-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .detail-label {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .detail-value {
+            font-size: 1.1em;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .phases-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .phase-card {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        }
+
+        .phase-card h4 {
+            color: #2c7744;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+
+        .phase-data {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .data-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .data-value {
+            font-size: 1.3em;
+            font-weight: 600;
+            color: #2c7744;
+        }
+
+        .data-label {
+            font-size: 0.8em;
+            color: #666;
+        }
+
+        .filter-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+
+        .filter-form {
+            display: flex;
+            gap: 20px;
+            align-items: end;
+            flex-wrap: wrap;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .form-group label {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .form-group input, .form-group select {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 0.9em;
+        }
+
+        .date-info {
+            font-size: 0.8em;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .actions-section {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .readings-table {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        }
+
+        .table-header {
+            background: #2c7744;
+            color: white;
+            padding: 15px 20px;
+            font-weight: 600;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+        }
+
+        .empty-state h3 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: white;
+            margin: 10% auto;
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 500px;
+            position: relative;
+        }
+
+        .close {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            font-size: 1.5em;
+            cursor: pointer;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+
+        .admin-banner {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+            color: white;
+            padding: 15px 40px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border-left: 5px solid #dc3545;
+        }
+
+        .quick-select-buttons {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+}
+
+.quick-select-btn {
+    padding: 6px 12px;
+    border: 1px solid #ddd;
+    background: #f8f9fa;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9em;
+}
+
+.quick-select-btn:hover {
+    background: #e9ecef;
+}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Xnovest Africa</h1>
+            <h2>3-Phase Meter Data Portal</h2>
+            <div class="user-section">
+                <span class="welcome">Welcome, <%= user.username %>!</span>
+                <a href="/logout" class="btn btn-logout">Logout</a>
+            </div>
+        </div>
+
+        <% if (isAdmin) { %>
+            <div class="admin-banner">
+                🔧 ADMINISTRATOR MODE - Viewing all users' meters
+            </div>
+        <% } %>
+
+        <div class="dashboard-content">
+            <% if (errors && errors.length) { %>
+                <div class="error-message">
+                    <% errors.forEach(error => { %>
+                        <div><%= error %></div>
+                    <% }) %>
+                </div>
+            <% } %>
+
+            <div class="meter-selector-section">
+                <div class="meter-selector">
+                    <select id="meterSelect" onchange="switchMeter(this.value)">
+                        <option value="">Select a Meter</option>
+                        <% userMeters.forEach(meter => { %>
+                            <option value="<%= meter.id %>" <%= selectedMeter && selectedMeter.id == meter.id ? 'selected' : '' %>>
+                                <%= meter.name %> - <%= meter.location %>
+                                <% if (isAdmin && meter.username) { %>
+                                    (User: <%= meter.username %>)
+                                <% } %>
+                            </option>
+                        <% }) %>
+                    </select>
+                    <% if (isAdmin) { %>
+                        <button class="btn btn-primary" onclick="openAddMeterModal()">Add Meter</button>
+                    <% } %>
+                </div>
+            </div>
+
+            <% if (!selectedMeter) { %>
+                <div class="empty-state">
+                    <h3>No Meters Found</h3>
+                    <p>Get started by adding your first meter to monitor energy consumption.</p>
+                    <% if (isAdmin) { %>
+                        <button class="btn btn-primary" onclick="openAddMeterModal()" style="margin-top: 20px;">Add Your First Meter</button>
+                    <% } else { %>
+                        <p style="margin-top: 20px;">Please contact an administrator to add meters to your account.</p>
+                    <% } %>
+                </div>
+            <% } else { %>
+                <!-- Meter Info Card -->
+                <div class="meter-info-card">
+                    <h3>
+                        <%= selectedMeter.name %> - <%= selectedMeter.location %>
+                        <% if (isAdmin && selectedMeter.username) { %>
+                            <span style="font-size: 0.8em; color: #666; margin-left: 10px;">
+                                (Owner: <%= selectedMeter.username %>)
+                            </span>
+                        <% } %>
+                    </h3>
+                    <div class="meter-details">
+                        <div class="detail-item">
+                            <span class="detail-label">Meter Name</span>
+                            <span class="detail-value"><%= selectedMeter.name %></span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Location</span>
+                            <span class="detail-value"><%= selectedMeter.location %></span>
+                        </div>
+                        <% if (isAdmin && selectedMeter.username) { %>
+                        <div class="detail-item">
+                            <span class="detail-label">Owner</span>
+                            <span class="detail-value"><%= selectedMeter.username %></span>
+                        </div>
+                        <% } %>
+                        <div class="detail-item">
+                            <span class="detail-label">Installation Date</span>
+                            <span class="detail-value"><%= new Date(selectedMeter.installation_date).toLocaleDateString() %></span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Capacity</span>
+                            <span class="detail-value"><%= selectedMeter.capacity_kw %> kW</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Phase Data Cards -->
+                <div class="phases-grid">
+                    <div class="phase-card">
+                        <h4>Phase L1</h4>
+                        <div class="phase-data">
+                            <div class="data-item">
+                                <span class="data-value">
+                                    <%= phaseData ? phaseData.l1_voltage.toFixed(2) : '0.00' %> V
+                                </span>
+                                <span class="data-label">Voltage</span>
+                            </div>
+                            <div class="data-item">
+                                <span class="data-value">
+                                    <%= phaseData ? phaseData.l1_current.toFixed(2) : '0.00' %> A
+                                </span>
+                                <span class="data-label">Current</span>
+                            </div>
+                            <div class="data-item">
+                                <span class="data-value">
+                                    <%= phaseData ? phaseData.l1_power.toFixed(2) : '0.00' %> kW
+                                </span>
+                                <span class="data-label">Power</span>
+                            </div>
+                            <div class="data-item">
+                                <span class="data-value">
+                                    <%= phaseData ? phaseData.l1_energy.toFixed(2) : '0.00' %> kWh
+                                </span>
+                                <span class="data-label">Energy</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="phase-card">
+                        <h4>Phase L2</h4>
+                        <div class="phase-data">
+                            <div class="data-item">
+                                <span class="data-value">
+                                    <%= phaseData ? phaseData.l2_voltage.toFixed(2) : '0.00' %> V
+                                </span>
+                                <span class="data-label">Voltage</span>
+                            </div>
+                            <div class="data-item">
+                                <span class="data-value">
+                                    <%= phaseData ? phaseData.l2_current.toFixed(2) : '0.00' %> A
+                                </span>
+                                <span class="data-label">Current</span>
+                            </div>
+                            <div class="data-item">
+                                <span class="data-value">
+                                    <%= phaseData ? phaseData.l2_power.toFixed(2) : '0.00' %> kW
+                                </span>
+                                <span class="data-label">Power</span>
+                            </div>
+                            <div class="data-item">
+                                <span class="data-value">
+                                    <%= phaseData ? phaseData.l2_energy.toFixed(2) : '0.00' %> kWh
+                                </span>
+                                <span class="data-label">Energy</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="phase-card">
+                        <h4>Phase L3</h4>
+                        <div class="phase-data">
+                            <div class="data-item">
+                                <span class="data-value">
+                                    <%= phaseData ? phaseData.l3_voltage.toFixed(2) : '0.00' %> V
+                                </span>
+                                <span class="data-label">Voltage</span>
+                            </div>
+                            <div class="data-item">
+                                <span class="data-value">
+                                    <%= phaseData ? phaseData.l3_current.toFixed(2) : '0.00' %> A
+                                </span>
+                                <span class="data-label">Current</span>
+                            </div>
+                            <div class="data-item">
+                                <span class="data-value">
+                                    <%= phaseData ? phaseData.l3_power.toFixed(2) : '0.00' %> kW
+                                </span>
+                                <span class="data-label">Power</span>
+                            </div>
+                            <div class="data-item">
+                                <span class="data-value">
+                                    <%= phaseData ? phaseData.l3_energy.toFixed(2) : '0.00' %> kWh
+                                </span>
+                                <span class="data-label">Energy</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Filter Section -->
+<div class="filter-section">
+    <form action="/filter-meter-data" method="POST" class="filter-form">
+        <input type="hidden" name="meter_id" value="<%= selectedMeter.id %>">
+        
+        <div style="margin-bottom: 15px;">
+            <strong>Quick Select:</strong>
+            <div style="display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap;">
+                <button type="button" class="btn btn-secondary" onclick="setDateRange(1)">Today</button>
+                <button type="button" class="btn btn-secondary" onclick="setDateRange(7)">Last 7 Days</button>
+                <button type="button" class="btn btn-secondary" onclick="setDateRange(30)">Last 30 Days</button>
+                <button type="button" class="btn btn-secondary" onclick="setDateRange(90)">Last 90 Days</button>
+                <button type="button" class="btn btn-secondary" onclick="setDateRange(365)">Last Year</button>
+            </div>
+        </div>
+        
+        <div class="filter-form">
+            <div class="form-group">
+                <label>Start Date</label>
+                <input type="date" name="start_date" value="<%= startDate %>" 
+                       min="<%= selectedMeter.installation_date %>" 
+                       max="<%= new Date().toISOString().split('T')[0] %>" required>
+                <div class="date-info">Available from: <%= new Date(selectedMeter.installation_date).toLocaleDateString() %></div>
+            </div>
+            <div class="form-group">
+                <label>End Date</label>
+                <input type="date" name="end_date" value="<%= endDate %>" 
+                       min="<%= selectedMeter.installation_date %>" 
+                       max="<%= new Date().toISOString().split('T')[0] %>" required>
+                <div class="date-info">Available until: <%= new Date().toLocaleDateString() %></div>
+            </div>
+            <div class="form-group">
+                <button type="submit" class="btn btn-primary">Apply Filter</button>
+                <button type="button" class="btn btn-secondary" onclick="setCustomDateRange()">Apply Custom Range</button>
+                <a href="/dashboard?meter_id=<%= selectedMeter.id %>" class="btn btn-secondary">Reset to Default</a>
+            </div>
+        </div>
+    </form>
+</div>
+
+                <!-- Actions Section -->
+                <div class="actions-section">
+                    <% if (selectedMeter) { %>
+                        <% if (isAdmin) { %>
+                            <form action="/generate-sample-data" method="POST">
+                                <input type="hidden" name="meter_id" value="<%= selectedMeter.id %>">
+                                <button type="submit" class="btn btn-primary">Load Sample Data</button>
+                            </form>
+                            
+                            <form action="/delete-meter" method="POST" style="display: inline;">
+                                <input type="hidden" name="meter_id" value="<%= selectedMeter.id %>">
+                                <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete this meter and all its data?')">Delete Meter</button>
+                            </form>
+                        <% } %>
+                        
+                        <% if (meterReadings.length > 0) { %>
+                            <a href="/download-csv?meter_id=<%= selectedMeter.id %>&start_date=<%= startDate %>&end_date=<%= endDate %>" 
+                               class="btn btn-primary">
+                                Download CSV
+                            </a>
+                        <% } %>
+                    <% } %>
+                </div>
+
+                <!-- Meter Readings Table -->
+                <div class="readings-table">
+                    <div class="table-header">
+                        Meter Readings (<%= meterReadings.length %> records)
+                        <% if (startDate && endDate) { %>
+                            <span style="font-size: 0.8em; font-weight: normal; margin-left: 10px;">
+                                from <%= new Date(startDate).toLocaleDateString() %> to <%= new Date(endDate).toLocaleDateString() %>
+                            </span>
+                        <% } %>
+                    </div>
+                    <% if (meterReadings.length > 0) { %>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Timestamp</th>
+                                    <th>L1 V (V)</th>
+                                    <th>L1 I (A)</th>
+                                    <th>L1 P (kW)</th>
+                                    <th>L1 E (kWh)</th>
+                                    <th>L2 V (V)</th>
+                                    <th>L2 I (A)</th>
+                                    <th>L2 P (kW)</th>
+                                    <th>L2 E (kWh)</th>
+                                    <th>L3 V (V)</th>
+                                    <th>L3 I (A)</th>
+                                    <th>L3 P (kW)</th>
+                                    <th>L3 E (kWh)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% meterReadings.forEach(reading => { %>
+                                    <tr>
+                                        <td><%= new Date(reading.timestamp).toLocaleString() %></td>
+                                        <td><%= reading.l1_voltage?.toFixed(2) %></td>
+                                        <td><%= reading.l1_current?.toFixed(2) %></td>
+                                        <td><%= reading.l1_power?.toFixed(2) %></td>
+                                        <td><%= reading.l1_energy?.toFixed(2) %></td>
+                                        <td><%= reading.l2_voltage?.toFixed(2) %></td>
+                                        <td><%= reading.l2_current?.toFixed(2) %></td>
+                                        <td><%= reading.l2_power?.toFixed(2) %></td>
+                                        <td><%= reading.l2_energy?.toFixed(2) %></td>
+                                        <td><%= reading.l3_voltage?.toFixed(2) %></td>
+                                        <td><%= reading.l3_current?.toFixed(2) %></td>
+                                        <td><%= reading.l3_power?.toFixed(2) %></td>
+                                        <td><%= reading.l3_energy?.toFixed(2) %></td>
+                                    </tr>
+                                <% }) %>
+                            </tbody>
+                        </table>
+                    <% } else { %>
+                        <div class="empty-state">
+                            <p>No readings found for the selected date range.</p>
+                            <% if (isAdmin) { %>
+                                <p>Generate sample data or adjust your date filters.</p>
+                            <% } else { %>
+                                <p>Please contact an administrator if you need data for this meter.</p>
+                            <% } %>
+                        </div>
+                    <% } %>
+                </div>
+            <% } %>
+        </div>
+    </div>
+
+    <!-- Add Meter Modal (Admin Only) -->
+    <% if (isAdmin) { %>
+    <div id="addMeterModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeAddMeterModal()">&times;</span>
+            <h3>Add New Meter</h3>
+            <form action="/add-meter" method="POST">
+                <div class="form-group">
+                    <label>User (Owner)</label>
+                    <select name="user_id" required>
+                        <option value="">Select User</option>
+                        <% allUsers.forEach(user => { %>
+                            <option value="<%= user.id %>">
+                                <%= user.username %>
+                            </option>
+                        <% }) %>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Meter Name</label>
+                    <input type="text" name="name" placeholder="e.g., PEL103" required>
+                </div>
+                <div class="form-group">
+                    <label>Location</label>
+                    <input type="text" name="location" placeholder="e.g., West Acres" required>
+                </div>
+                <div class="form-group">
+                    <label>Installation Date</label>
+                    <input type="date" name="installation_date" required>
+                </div>
+                <div class="form-group">
+                    <label>Capacity (kW)</label>
+                    <input type="number" name="capacity_kw" step="0.1" placeholder="e.g., 100.5" required>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeAddMeterModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Meter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <% } %>
+
+    <script>
+        function switchMeter(meterId) {
+            if (meterId) {
+                window.location.href = '/dashboard?meter_id=' + meterId;
+            }
+        }
+
+        function openAddMeterModal() {
+            document.getElementById('addMeterModal').style.display = 'block';
+        }
+
+        function closeAddMeterModal() {
+            document.getElementById('addMeterModal').style.display = 'none';
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('addMeterModal');
+            if (event.target === modal) {
+                closeAddMeterModal();
+            }
+        }
+
+        // Set max date for date inputs to today
+        document.addEventListener('DOMContentLoaded', function() {
+            const today = new Date().toISOString().split('T')[0];
+            const dateInputs = document.querySelectorAll('input[type="date"]');
+            dateInputs.forEach(input => {
+                if (!input.hasAttribute('max')) {
+                    input.setAttribute('max', today);
+                }
+            });
+        });
+// Quick date range selection buttons
+function setDateRange(days) {
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+    
+    document.querySelector('input[name="start_date"]').value = startDate.toISOString().split('T')[0];
+    document.querySelector('input[name="end_date"]').value = endDate.toISOString().split('T')[0];
+}
+
+function setCustomDateRange() {
+    const startDate = document.querySelector('input[name="start_date"]').value;
+    const endDate = document.querySelector('input[name="end_date"]').value;
+    
+    if (startDate && endDate) {
+        document.querySelector('.filter-form').submit();
+    }
+}
+
+    </script>
+</body>
+</html>
