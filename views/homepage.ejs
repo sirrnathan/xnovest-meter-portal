@@ -79,6 +79,12 @@
             box-shadow: 0 0 0 3px rgba(44, 119, 68, 0.1);
         }
 
+        .name-fields {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
         .btn {
             width: 100%;
             padding: 15px;
@@ -147,10 +153,23 @@
         <% } %>
 
         <form action="/register" method="POST">
+            <div class="name-fields">
+                <div class="form-group">
+                    <label for="first_name">First Name</label>
+                    <input type="text" id="first_name" name="first_name" required 
+                           placeholder="Enter your first name">
+                </div>
+                <div class="form-group">
+                    <label for="last_name">Last Name</label>
+                    <input type="text" id="last_name" name="last_name" required 
+                           placeholder="Enter your last name">
+                </div>
+            </div>
+            
             <div class="form-group">
-                <label for="username">Username</label>
-                <input type="text" id="username" name="username" required 
-                       placeholder="Choose a username (3-10 characters)">
+                <label for="username">Email Address</label>
+                <input type="email" id="username" name="username" required 
+                       placeholder="your.email@example.com">
             </div>
             <div class="form-group">
                 <label for="password">Password</label>

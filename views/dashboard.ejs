@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Xnovest Africa - Meter Data Portal</title>
+    <!-- Add Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         * {
             margin: 0;
@@ -83,6 +85,16 @@
 
         .btn-logout:hover {
             background: rgba(255,255,255,0.3);
+        }
+
+        .btn-change-password {
+            background: rgba(255,255,255,0.15);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+
+        .btn-change-password:hover {
+            background: rgba(255,255,255,0.25);
         }
 
         .dashboard-content {
@@ -218,6 +230,55 @@
         .data-label {
             font-size: 0.8em;
             color: #666;
+        }
+
+        /* Chart Section Styles */
+        .chart-section {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            border: 1px solid #e0e0e0;
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .chart-header h3 {
+            color: #2c7744;
+            margin: 0;
+            font-size: 1.4em;
+        }
+
+        .chart-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .chart-controls select {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 0.9em;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 400px;
+            width: 100%;
+        }
+
+        #energyChart {
+            width: 100% !important;
+            height: 100% !important;
         }
 
         .filter-section {
@@ -360,24 +421,103 @@
         }
 
         .quick-select-buttons {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 15px;
-    flex-wrap: wrap;
-}
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
 
-.quick-select-btn {
-    padding: 6px 12px;
-    border: 1px solid #ddd;
-    background: #f8f9fa;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 0.9em;
-}
+        .quick-select-btn {
+            padding: 6px 12px;
+            border: 1px solid #ddd;
+            background: #f8f9fa;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9em;
+        }
 
-.quick-select-btn:hover {
-    background: #e9ecef;
-}
+        .quick-select-btn:hover {
+            background: #e9ecef;
+        }
+
+        /* Pagination Styles */
+        .pagination-section {
+            margin-top: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background: #f8f9fa;
+            border-radius: 0 0 10px 10px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .pagination-info {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .pagination-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .page-numbers {
+            display: flex;
+            gap: 5px;
+        }
+
+        .btn-pagination {
+            padding: 8px 12px;
+            background: #2c7744;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 0.9em;
+            transition: background 0.3s ease;
+        }
+
+        .btn-pagination:hover {
+            background: #236338;
+        }
+
+        .btn-pagination.current {
+            background: #236338;
+            font-weight: bold;
+        }
+
+        .btn-pagination.disabled {
+            background: #6c757d;
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .page-size-info {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        @media (max-width: 768px) {
+            .chart-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .chart-container {
+                height: 300px;
+            }
+            
+            .user-section {
+                position: static;
+                justify-content: center;
+                margin-top: 20px;
+            }
+            
+            .header {
+                padding: 20px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -386,7 +526,9 @@
             <h1>Xnovest Africa</h1>
             <h2>3-Phase Meter Data Portal</h2>
             <div class="user-section">
-                <span class="welcome">Welcome, <%= user.username %>!</span>
+                <span class="welcome">Welcome, <%= user.displayName %>!</span>
+                <a href="/profile" class="btn btn-change-password">Profile</a>
+                <a href="/change-password" class="btn btn-change-password">Change Password</a>
                 <a href="/logout" class="btn btn-logout">Logout</a>
             </div>
         </div>
@@ -410,14 +552,16 @@
                 <div class="meter-selector">
                     <select id="meterSelect" onchange="switchMeter(this.value)">
                         <option value="">Select a Meter</option>
-                        <% userMeters.forEach(meter => { %>
-                            <option value="<%= meter.id %>" <%= selectedMeter && selectedMeter.id == meter.id ? 'selected' : '' %>>
-                                <%= meter.name %> - <%= meter.location %>
-                                <% if (isAdmin && meter.username) { %>
-                                    (User: <%= meter.username %>)
-                                <% } %>
-                            </option>
-                        <% }) %>
+                        <% if (userMeters && userMeters.length > 0) { %>
+                            <% userMeters.forEach(meter => { %>
+                                <option value="<%= meter.id %>" <%= selectedMeter && selectedMeter.id == meter.id ? 'selected' : '' %>>
+                                    <%= meter.name %> - <%= meter.location %>
+                                    <% if (isAdmin && meter.username) { %>
+                                        (User: <%= meter.username %>)
+                                    <% } %>
+                                </option>
+                            <% }) %>
+                        <% } %>
                     </select>
                     <% if (isAdmin) { %>
                         <button class="btn btn-primary" onclick="openAddMeterModal()">Add Meter</button>
@@ -425,7 +569,7 @@
                 </div>
             </div>
 
-            <% if (!selectedMeter) { %>
+            <% if (!selectedMeter || userMeters.length === 0) { %>
                 <div class="empty-state">
                     <h3>No Meters Found</h3>
                     <p>Get started by adding your first meter to monitor energy consumption.</p>
@@ -565,51 +709,71 @@
                     </div>
                 </div>
 
+                <!-- Chart Section -->
+                <% if (selectedMeter && meterReadings && meterReadings.length > 0) { %>
+                <div class="chart-section">
+                    <div class="chart-header">
+                        <h3>Energy Consumption Trend</h3>
+                        <div class="chart-controls">
+                            <select id="chartDays" onchange="updateChart()">
+                                <option value="1">Last 24 Hours</option>
+                                <option value="7" selected>Last 7 Days</option>
+                                <option value="30">Last 30 Days</option>
+                                <option value="90">Last 90 Days</option>
+                            </select>
+                            <button onclick="updateChart()" class="btn btn-primary">Refresh</button>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="energyChart"></canvas>
+                    </div>
+                </div>
+                <% } %>
+
                 <!-- Filter Section -->
-<div class="filter-section">
-    <form action="/filter-meter-data" method="POST" class="filter-form">
-        <input type="hidden" name="meter_id" value="<%= selectedMeter.id %>">
-        
-        <div style="margin-bottom: 15px;">
-            <strong>Quick Select:</strong>
-            <div style="display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap;">
-                <button type="button" class="btn btn-secondary" onclick="setDateRange(1)">Today</button>
-                <button type="button" class="btn btn-secondary" onclick="setDateRange(7)">Last 7 Days</button>
-                <button type="button" class="btn btn-secondary" onclick="setDateRange(30)">Last 30 Days</button>
-                <button type="button" class="btn btn-secondary" onclick="setDateRange(90)">Last 90 Days</button>
-                <button type="button" class="btn btn-secondary" onclick="setDateRange(365)">Last Year</button>
-            </div>
-        </div>
-        
-        <div class="filter-form">
-            <div class="form-group">
-                <label>Start Date</label>
-                <input type="date" name="start_date" value="<%= startDate %>" 
-                       min="<%= selectedMeter.installation_date %>" 
-                       max="<%= new Date().toISOString().split('T')[0] %>" required>
-                <div class="date-info">Available from: <%= new Date(selectedMeter.installation_date).toLocaleDateString() %></div>
-            </div>
-            <div class="form-group">
-                <label>End Date</label>
-                <input type="date" name="end_date" value="<%= endDate %>" 
-                       min="<%= selectedMeter.installation_date %>" 
-                       max="<%= new Date().toISOString().split('T')[0] %>" required>
-                <div class="date-info">Available until: <%= new Date().toLocaleDateString() %></div>
-            </div>
-            <div class="form-group">
-                <button type="submit" class="btn btn-primary">Apply Filter</button>
-                <button type="button" class="btn btn-secondary" onclick="setCustomDateRange()">Apply Custom Range</button>
-                <a href="/dashboard?meter_id=<%= selectedMeter.id %>" class="btn btn-secondary">Reset to Default</a>
-            </div>
-        </div>
-    </form>
-</div>
+                <div class="filter-section">
+                    <form action="/filter-meter-data" method="POST" class="filter-form">
+                        <input type="hidden" name="meter_id" value="<%= selectedMeter.id %>">
+                        
+                        <div style="margin-bottom: 15px;">
+                            <strong>Quick Select:</strong>
+                            <div class="quick-select-buttons">
+                                <button type="button" class="btn btn-secondary" onclick="setDateRange(1)">Today</button>
+                                <button type="button" class="btn btn-secondary" onclick="setDateRange(7)">Last 7 Days</button>
+                                <button type="button" class="btn btn-secondary" onclick="setDateRange(30)">Last 30 Days</button>
+                                <button type="button" class="btn btn-secondary" onclick="setDateRange(90)">Last 90 Days</button>
+                                <button type="button" class="btn btn-secondary" onclick="setDateRange(365)">Last Year</button>
+                            </div>
+                        </div>
+                        
+                        <div class="filter-form">
+                            <div class="form-group">
+                                <label>Start Date</label>
+                                <input type="date" name="start_date" value="<%= startDate %>" 
+                                       min="<%= selectedMeter.installation_date %>" 
+                                       max="<%= new Date().toISOString().split('T')[0] %>" required>
+                                <div class="date-info">Available from: <%= new Date(selectedMeter.installation_date).toLocaleDateString() %></div>
+                            </div>
+                            <div class="form-group">
+                                <label>End Date</label>
+                                <input type="date" name="end_date" value="<%= endDate %>" 
+                                       min="<%= selectedMeter.installation_date %>" 
+                                       max="<%= new Date().toISOString().split('T')[0] %>" required>
+                                <div class="date-info">Available until: <%= new Date().toLocaleDateString() %></div>
+                            </div>
+                            <div class="form-group">
+                                <button type="submit" class="btn btn-primary">Apply Filter</button>
+                                <a href="/dashboard?meter_id=<%= selectedMeter.id %>" class="btn btn-secondary">Reset to Default</a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
 
                 <!-- Actions Section -->
                 <div class="actions-section">
                     <% if (selectedMeter) { %>
                         <% if (isAdmin) { %>
-                            <form action="/generate-sample-data" method="POST">
+                            <form action="/generate-sample-data" method="POST" style="display: inline;">
                                 <input type="hidden" name="meter_id" value="<%= selectedMeter.id %>">
                                 <button type="submit" class="btn btn-primary">Load Sample Data</button>
                             </form>
@@ -620,10 +784,10 @@
                             </form>
                         <% } %>
                         
-                        <% if (meterReadings.length > 0) { %>
+                        <% if (meterReadings && meterReadings.length > 0) { %>
                             <a href="/download-csv?meter_id=<%= selectedMeter.id %>&start_date=<%= startDate %>&end_date=<%= endDate %>" 
                                class="btn btn-primary">
-                                Download CSV
+                                Download CSV (All <%= totalRecords %> records)
                             </a>
                         <% } %>
                     <% } %>
@@ -632,14 +796,21 @@
                 <!-- Meter Readings Table -->
                 <div class="readings-table">
                     <div class="table-header">
-                        Meter Readings (<%= meterReadings.length %> records)
+                        Meter Readings 
+                        <span style="font-size: 0.8em; font-weight: normal; margin-left: 10px;">
+                            <% if (totalRecords > 0) { %>
+                                (<%= totalRecords %> total records<% if (totalPages > 1) { %>, page <%= currentPage %> of <%= totalPages %><% } %>)
+                            <% } else { %>
+                                (No records found)
+                            <% } %>
+                        </span>
                         <% if (startDate && endDate) { %>
                             <span style="font-size: 0.8em; font-weight: normal; margin-left: 10px;">
                                 from <%= new Date(startDate).toLocaleDateString() %> to <%= new Date(endDate).toLocaleDateString() %>
                             </span>
                         <% } %>
                     </div>
-                    <% if (meterReadings.length > 0) { %>
+                    <% if (meterReadings && meterReadings.length > 0) { %>
                         <table>
                             <thead>
                                 <tr>
@@ -662,22 +833,106 @@
                                 <% meterReadings.forEach(reading => { %>
                                     <tr>
                                         <td><%= new Date(reading.timestamp).toLocaleString() %></td>
-                                        <td><%= reading.l1_voltage?.toFixed(2) %></td>
-                                        <td><%= reading.l1_current?.toFixed(2) %></td>
-                                        <td><%= reading.l1_power?.toFixed(2) %></td>
-                                        <td><%= reading.l1_energy?.toFixed(2) %></td>
-                                        <td><%= reading.l2_voltage?.toFixed(2) %></td>
-                                        <td><%= reading.l2_current?.toFixed(2) %></td>
-                                        <td><%= reading.l2_power?.toFixed(2) %></td>
-                                        <td><%= reading.l2_energy?.toFixed(2) %></td>
-                                        <td><%= reading.l3_voltage?.toFixed(2) %></td>
-                                        <td><%= reading.l3_current?.toFixed(2) %></td>
-                                        <td><%= reading.l3_power?.toFixed(2) %></td>
-                                        <td><%= reading.l3_energy?.toFixed(2) %></td>
+                                        <td><%= reading.l1_voltage ? reading.l1_voltage.toFixed(2) : '0.00' %></td>
+                                        <td><%= reading.l1_current ? reading.l1_current.toFixed(2) : '0.00' %></td>
+                                        <td><%= reading.l1_power ? reading.l1_power.toFixed(2) : '0.00' %></td>
+                                        <td><%= reading.l1_energy ? reading.l1_energy.toFixed(2) : '0.00' %></td>
+                                        <td><%= reading.l2_voltage ? reading.l2_voltage.toFixed(2) : '0.00' %></td>
+                                        <td><%= reading.l2_current ? reading.l2_current.toFixed(2) : '0.00' %></td>
+                                        <td><%= reading.l2_power ? reading.l2_power.toFixed(2) : '0.00' %></td>
+                                        <td><%= reading.l2_energy ? reading.l2_energy.toFixed(2) : '0.00' %></td>
+                                        <td><%= reading.l3_voltage ? reading.l3_voltage.toFixed(2) : '0.00' %></td>
+                                        <td><%= reading.l3_current ? reading.l3_current.toFixed(2) : '0.00' %></td>
+                                        <td><%= reading.l3_power ? reading.l3_power.toFixed(2) : '0.00' %></td>
+                                        <td><%= reading.l3_energy ? reading.l3_energy.toFixed(2) : '0.00' %></td>
                                     </tr>
                                 <% }) %>
                             </tbody>
                         </table>
+
+                        <!-- Pagination Section -->
+                        <% if (totalPages > 1) { %>
+                        <div class="pagination-section">
+                            <div class="pagination-info">
+                                Showing <%= Math.min((currentPage - 1) * limit + 1, totalRecords) %> to <%= Math.min(currentPage * limit, totalRecords) %> of <%= totalRecords %> records
+                            </div>
+                            
+                            <div class="pagination-controls">
+                                <!-- First Page -->
+                                <% if (currentPage > 1) { %>
+                                    <a href="?meter_id=<%= selectedMeter.id %>&page=1<%= startDate && endDate ? '&start_date=' + startDate + '&end_date=' + endDate : '' %>" 
+                                       class="btn-pagination">
+                                        First
+                                    </a>
+                                <% } else { %>
+                                    <span class="btn-pagination disabled">
+                                        First
+                                    </span>
+                                <% } %>
+                                
+                                <!-- Previous Page -->
+                                <% if (currentPage > 1) { %>
+                                    <a href="?meter_id=<%= selectedMeter.id %>&page=<%= currentPage - 1 %><%= startDate && endDate ? '&start_date=' + startDate + '&end_date=' + endDate : '' %>" 
+                                       class="btn-pagination">
+                                        Previous
+                                    </a>
+                                <% } else { %>
+                                    <span class="btn-pagination disabled">
+                                        Previous
+                                    </span>
+                                <% } %>
+                                
+                                <!-- Page Numbers -->
+                                <div class="page-numbers">
+                                    <% 
+                                    let startPage = Math.max(1, currentPage - 2);
+                                    let endPage = Math.min(totalPages, currentPage + 2);
+                                    
+                                    for (let i = startPage; i <= endPage; i++) { 
+                                        if (i === currentPage) { %>
+                                            <span class="btn-pagination current">
+                                                <%= i %>
+                                            </span>
+                                        <% } else { %>
+                                            <a href="?meter_id=<%= selectedMeter.id %>&page=<%= i %><%= startDate && endDate ? '&start_date=' + startDate + '&end_date=' + endDate : '' %>" 
+                                               class="btn-pagination">
+                                                <%= i %>
+                                            </a>
+                                        <% } 
+                                    } %>
+                                </div>
+                                
+                                <!-- Next Page -->
+                                <% if (currentPage < totalPages) { %>
+                                    <a href="?meter_id=<%= selectedMeter.id %>&page=<%= currentPage + 1 %><%= startDate && endDate ? '&start_date=' + startDate + '&end_date=' + endDate : '' %>" 
+                                       class="btn-pagination">
+                                        Next
+                                    </a>
+                                <% } else { %>
+                                    <span class="btn-pagination disabled">
+                                        Next
+                                    </span>
+                                <% } %>
+                                
+                                <!-- Last Page -->
+                                <% if (currentPage < totalPages) { %>
+                                    <a href="?meter_id=<%= selectedMeter.id %>&page=<%= totalPages %><%= startDate && endDate ? '&start_date=' + startDate + '&end_date=' + endDate : '' %>" 
+                                       class="btn-pagination">
+                                        Last
+                                    </a>
+                                <% } else { %>
+                                    <span class="btn-pagination disabled">
+                                        Last
+                                    </span>
+                                <% } %>
+                            </div>
+                            
+                            <div class="page-size-info">
+                                <%= limit %> per page
+                            </div>
+                        </div>
+                        <% } %>
+
                     <% } else { %>
                         <div class="empty-state">
                             <p>No readings found for the selected date range.</p>
@@ -704,11 +959,13 @@
                     <label>User (Owner)</label>
                     <select name="user_id" required>
                         <option value="">Select User</option>
-                        <% allUsers.forEach(user => { %>
-                            <option value="<%= user.id %>">
-                                <%= user.username %>
-                            </option>
-                        <% }) %>
+                        <% if (allUsers && allUsers.length > 0) { %>
+                            <% allUsers.forEach(user => { %>
+                                <option value="<%= user.id %>">
+                                    <%= user.username %>
+                                </option>
+                            <% }) %>
+                        <% } %>
                     </select>
                 </div>
                 <div class="form-group">
@@ -737,57 +994,209 @@
     <% } %>
 
     <script>
-        function switchMeter(meterId) {
-            if (meterId) {
-                window.location.href = '/dashboard?meter_id=' + meterId;
+    let energyChart = null;
+
+    // Initialize chart when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        // Wait a bit for the page to fully load
+        setTimeout(() => {
+            if (document.getElementById('energyChart')) {
+                updateChart();
             }
+        }, 1000);
+    });
+
+    function updateChart() {
+        const meterId = <%= selectedMeter ? selectedMeter.id : 'null' %>;
+        const days = document.getElementById('chartDays').value;
+        
+        if (!meterId) {
+            console.log('No meter selected');
+            return;
         }
 
-        function openAddMeterModal() {
-            document.getElementById('addMeterModal').style.display = 'block';
-        }
+        // Show loading state
+        const chartCanvas = document.getElementById('energyChart');
+        const ctx = chartCanvas.getContext('2d');
+        ctx.clearRect(0, 0, chartCanvas.width, chartCanvas.height);
+        ctx.fillStyle = '#f8f9fa';
+        ctx.fillRect(0, 0, chartCanvas.width, chartCanvas.height);
+        ctx.fillStyle = '#666';
+        ctx.textAlign = 'center';
+        ctx.font = '16px Arial';
+        ctx.fillText('Loading chart data...', chartCanvas.width / 2, chartCanvas.height / 2);
 
-        function closeAddMeterModal() {
-            document.getElementById('addMeterModal').style.display = 'none';
-        }
-
-        // Close modal when clicking outside
-        window.onclick = function(event) {
-            const modal = document.getElementById('addMeterModal');
-            if (event.target === modal) {
-                closeAddMeterModal();
-            }
-        }
-
-        // Set max date for date inputs to today
-        document.addEventListener('DOMContentLoaded', function() {
-            const today = new Date().toISOString().split('T')[0];
-            const dateInputs = document.querySelectorAll('input[type="date"]');
-            dateInputs.forEach(input => {
-                if (!input.hasAttribute('max')) {
-                    input.setAttribute('max', today);
+        // Fetch chart data
+        fetch(`/chart-data?meter_id=${meterId}&days=${days}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
                 }
+                return response.json();
+            })
+            .then(chartData => {
+                renderChart(chartData);
+            })
+            .catch(error => {
+                console.error('Error fetching chart data:', error);
+                // Show error message
+                ctx.clearRect(0, 0, chartCanvas.width, chartCanvas.height);
+                ctx.fillStyle = '#f8f9fa';
+                ctx.fillRect(0, 0, chartCanvas.width, chartCanvas.height);
+                ctx.fillStyle = '#dc3545';
+                ctx.textAlign = 'center';
+                ctx.font = '16px Arial';
+                ctx.fillText('Error loading chart data', chartCanvas.width / 2, chartCanvas.height / 2 - 10);
+                ctx.fillText('Please try again later', chartCanvas.width / 2, chartCanvas.height / 2 + 10);
             });
-        });
-// Quick date range selection buttons
-function setDateRange(days) {
-    const endDate = new Date();
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - days);
-    
-    document.querySelector('input[name="start_date"]').value = startDate.toISOString().split('T')[0];
-    document.querySelector('input[name="end_date"]').value = endDate.toISOString().split('T')[0];
-}
-
-function setCustomDateRange() {
-    const startDate = document.querySelector('input[name="start_date"]').value;
-    const endDate = document.querySelector('input[name="end_date"]').value;
-    
-    if (startDate && endDate) {
-        document.querySelector('.filter-form').submit();
     }
-}
 
-    </script>
+    function renderChart(chartData) {
+        const ctx = document.getElementById('energyChart').getContext('2d');
+        
+        // Destroy existing chart if it exists
+        if (energyChart) {
+            energyChart.destroy();
+        }
+
+        // Check if we have data
+        const hasData = chartData.labels.length > 0 && chartData.datasets.some(dataset => dataset.data.length > 0);
+        
+        if (!hasData) {
+            // Show no data message
+            ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+            ctx.fillStyle = '#f8f9fa';
+            ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+            ctx.fillStyle = '#666';
+            ctx.textAlign = 'center';
+            ctx.font = '16px Arial';
+            ctx.fillText('No data available for the selected period', ctx.canvas.width / 2, ctx.canvas.height / 2 - 10);
+            ctx.fillText('Try generating sample data or select a different time range', ctx.canvas.width / 2, ctx.canvas.height / 2 + 10);
+            return;
+        }
+
+        // Create new chart
+        energyChart = new Chart(ctx, {
+            type: 'line',
+            data: chartData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Energy Consumption Over Time',
+                        font: {
+                            size: 16
+                        }
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.y !== null) {
+                                    label += context.parsed.y.toFixed(2) + ' kWh';
+                                }
+                                return label;
+                            }
+                        }
+                    },
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            usePointStyle: true,
+                            padding: 20
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        display: true,
+                        title: {
+                            display: true,
+                            text: 'Time'
+                        },
+                        grid: {
+                            display: true
+                        }
+                    },
+                    y: {
+                        display: true,
+                        title: {
+                            display: true,
+                            text: 'Energy (kWh)'
+                        },
+                        beginAtZero: true,
+                        grid: {
+                            display: true
+                        }
+                    }
+                },
+                interaction: {
+                    mode: 'nearest',
+                    axis: 'x',
+                    intersect: false
+                },
+                elements: {
+                    point: {
+                        radius: 3,
+                        hoverRadius: 6
+                    }
+                },
+                animation: {
+                    duration: 1000
+                }
+            }
+        });
+    }
+
+    function switchMeter(meterId) {
+        if (meterId) {
+            window.location.href = '/dashboard?meter_id=' + meterId;
+        }
+    }
+
+    function openAddMeterModal() {
+        document.getElementById('addMeterModal').style.display = 'block';
+    }
+
+    function closeAddMeterModal() {
+        document.getElementById('addMeterModal').style.display = 'none';
+    }
+
+    // Close modal when clicking outside
+    window.onclick = function(event) {
+        const modal = document.getElementById('addMeterModal');
+        if (event.target === modal) {
+            closeAddMeterModal();
+        }
+    }
+
+    // Set max date for date inputs to today
+    document.addEventListener('DOMContentLoaded', function() {
+        const today = new Date().toISOString().split('T')[0];
+        const dateInputs = document.querySelectorAll('input[type="date"]');
+        dateInputs.forEach(input => {
+            if (!input.hasAttribute('max')) {
+                input.setAttribute('max', today);
+            }
+        });
+    });
+
+    // Quick date range selection buttons
+    function setDateRange(days) {
+        const endDate = new Date();
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - days);
+        
+        document.querySelector('input[name="start_date"]').value = startDate.toISOString().split('T')[0];
+        document.querySelector('input[name="end_date"]').value = endDate.toISOString().split('T')[0];
+    }
+</script>
 </body>
 </html>

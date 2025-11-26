@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile - Xnovest Africa</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3)), 
+                        url('1.jpg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 40px auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c7744 0%, #5a9e6f 100%);
+            color: white;
+            padding: 30px 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .header p {
+            font-size: 1em;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .profile-complete {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            border: 1px solid #c3e6cb;
+        }
+
+        .profile-incomplete {
+            background: #fff3cd;
+            color: #856404;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            border: 1px solid #ffeaa7;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #2c7744;
+        }
+
+        .form-group input[readonly] {
+            background-color: #f8f9fa;
+            color: #6c757d;
+            cursor: not-allowed;
+        }
+
+        .name-fields {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .btn-primary {
+            background: #2c7744;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #236338;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #545b62;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 15px;
+            justify-content: flex-start;
+            margin-top: 30px;
+        }
+
+        .back-link {
+            text-align: center;
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .back-link a {
+            color: #2c7744;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .errors {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            border-left: 5px solid #dc3545;
+        }
+
+        .success-message {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            border-left: 5px solid #c3e6cb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>My Profile</h1>
+            <p>Update your personal information</p>
+        </div>
+
+        <div class="content">
+            <% if (user.first_name && user.last_name) { %>
+                <div class="profile-complete">
+                    ✅ Your profile is complete
+                </div>
+            <% } else { %>
+                <div class="profile-incomplete">
+                    ⚠️ Please complete your profile by adding your name
+                </div>
+            <% } %>
+
+            <% if (errors && errors.length) { %>
+                <div class="errors">
+                    <% errors.forEach(error => { %>
+                        <div><%= error %></div>
+                    <% }) %>
+                </div>
+            <% } %>
+
+            <form action="/update-profile" method="POST">
+                <div class="name-fields">
+                    <div class="form-group">
+                        <label for="first_name">First Name *</label>
+                        <input type="text" id="first_name" name="first_name" 
+                               value="<%= user.first_name || '' %>" required 
+                               placeholder="Enter your first name">
+                    </div>
+                    <div class="form-group">
+                        <label for="last_name">Last Name *</label>
+                        <input type="text" id="last_name" name="last_name" 
+                               value="<%= user.last_name || '' %>" required 
+                               placeholder="Enter your last name">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="username">Email Address</label>
+                    <input type="email" id="username" name="username" 
+                           value="<%= user.username %>" readonly>
+                    <small style="color: #666; font-size: 0.9em;">Email address cannot be changed</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="phone_number">Phone Number</label>
+                    <input type="tel" id="phone_number" name="phone_number" 
+                           value="<%= user.phone_number || '' %>" 
+                           placeholder="+27 12 345 6789">
+                </div>
+
+                <div class="form-group">
+                    <label for="company">Company</label>
+                    <input type="text" id="company" name="company" 
+                           value="<%= user.company || '' %>" 
+                           placeholder="Your company name">
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Update Profile</button>
+                    <a href="/dashboard" class="btn btn-secondary">Cancel</a>
+                </div>
+            </form>
+
+            <div class="back-link">
+                <a href="/change-password">Change Password</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Add some client-side validation
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.querySelector('form');
+            const firstName = document.getElementById('first_name');
+            const lastName = document.getElementById('last_name');
+
+            form.addEventListener('submit', function(e) {
+                let isValid = true;
+                const errors = [];
+
+                // Validate first name
+                if (!firstName.value.trim()) {
+                    errors.push('First name is required');
+                    isValid = false;
+                }
+
+                // Validate last name
+                if (!lastName.value.trim()) {
+                    errors.push('Last name is required');
+                    isValid = false;
+                }
+
+                if (!isValid) {
+                    e.preventDefault();
+                    // You could display these errors in a more user-friendly way
+                    console.log('Validation errors:', errors);
+                }
+            });
+
+            // Character limit indicators
+            const inputs = document.querySelectorAll('input[type="text"]');
+            inputs.forEach(input => {
+                input.addEventListener('input', function() {
+                    const maxLength = this.getAttribute('maxlength');
+                    if (maxLength) {
+                        const currentLength = this.value.length;
+                        if (currentLength > maxLength - 10) {
+                            this.style.borderColor = '#ffc107';
+                        } else {
+                            this.style.borderColor = '#e0e0e0';
+                        }
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
