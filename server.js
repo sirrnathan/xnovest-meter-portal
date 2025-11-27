@@ -777,101 +777,6 @@ app.post("/update-profile", (req, res) => {
     }
 });
 
-app.post("/update-profile", (req, res) => {
-    if (!req.user) {
-        return res.redirect("/login");
-    }
-
-    const errors = [];
-    const { first_name, last_name, phone_number, company } = req.body;
-
-    // Validation
-    if (!first_name || first_name.trim() === '') {
-        errors.push("First name is required");
-    }
-    if (!last_name || last_name.trim() === '') {
-        errors.push("Last name is required");
-    }
-    if (first_name && first_name.length > 50) {
-        errors.push("First name cannot exceed 50 characters");
-    }
-    if (last_name && last_name.length > 50) {
-        errors.push("Last name cannot exceed 50 characters");
-    }
-    if (phone_number && phone_number.length > 20) {
-        errors.push("Phone number cannot exceed 20 characters");
-    }
-    if (company && company.length > 100) {
-        errors.push("Company name cannot exceed 100 characters");
-    }
-
-    if (errors.length > 0) {
-        const userData = db.prepare("SELECT * FROM users WHERE id = ?").get(req.user.userid);
-        return res.render("profile.ejs", {
-            user: userData,
-            errors: errors
-        });
-    }
-
-    // Update user profile
-    try {
-        db.prepare(`
-            UPDATE users 
-            SET first_name = ?, last_name = ?, phone_number = ?, company = ?
-            WHERE id = ?
-        `).run(
-            first_name.trim(),
-            last_name.trim(),
-            phone_number ? phone_number.trim() : null,
-            company ? company.trim() : null,
-            req.user.userid
-        );
-
-        console.log(`Profile updated for user: ${req.user.username}`);
-        
-        // Update the JWT token with new name for immediate display
-        const updatedUser = db.prepare("SELECT * FROM users WHERE id = ?").get(req.user.userid);
-        
-        // Set display name: first name + last name, or first name, or username as fallback
-        let displayName;
-        if (updatedUser.first_name && updatedUser.last_name) {
-            displayName = `${updatedUser.first_name} ${updatedUser.last_name}`;
-        } else if (updatedUser.first_name) {
-            displayName = updatedUser.first_name;
-        } else {
-            displayName = updatedUser.username;
-        }
-        
-        const ourTokenValue = jwt.sign(
-            {
-                exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24, 
-                skyColor: "blue", 
-                userid: updatedUser.id, 
-                username: updatedUser.username, 
-                displayName: displayName
-            }, 
-            process.env.JWTSECRET
-        );
-
-        res.cookie("ourSimpleApp", ourTokenValue, {
-            httpOnly: true,
-            secure: true,
-            sameSite: "strict",
-            maxAge: 1000 * 60 * 60 * 24
-        });
-
-        res.redirect("/dashboard?profile_updated=true");
-    } catch (error) {
-        console.error("Error updating profile:", error);
-        errors.push("An error occurred while updating your profile. Please try again.");
-        const userData = db.prepare("SELECT * FROM users WHERE id = ?").get(req.user.userid);
-        return res.render("profile.ejs", {
-            user: userData,
-            errors: errors
-        });
-    }
-});
-
 app.get("/logout", (req, res) => {
     res.clearCookie("ourSimpleApp")
     res.redirect("/login")
@@ -1188,7 +1093,7 @@ app.post("/filter-meter-data", (req, res) => {
     });
 })
 
-// Generate sample data for a meter - ADMIN ONLY (HOURLY READINGS)
+// Generate sample data for a meter - ADMIN ONLY (HOURLY READINGS AT EXACT INTERVALS)
 app.post("/generate-sample-data", (req, res) => {
     if (!req.user) {
         return res.redirect("/login");
@@ -1214,25 +1119,40 @@ app.post("/generate-sample-data", (req, res) => {
     const installationDate = new Date(meter.installation_date);
     const today = new Date();
     
-    // Calculate total days between installation and today
-    const totalDays = Math.floor((today - installationDate) / (1000 * 60 * 60 * 24));
+    // Set installation date to start of day (00:00:00)
+    installationDate.setHours(0, 0, 0, 0);
+    
+    // Set today to end of day (23:59:59)
+    today.setHours(23, 59, 59, 999);
+    
+    // Calculate total hours between installation and today
+    const totalMs = today - installationDate;
+    const totalHours = Math.floor(totalMs / (1000 * 60 * 60));
     
     // Create VERY different data patterns based on meter ID
     const meterPattern = parseInt(meter_id) % 4; // 4 different patterns
     
-    // Generate multiple readings per day (24 readings per day - hourly)
-    const readingsPerDay = 24; // One reading per hour
+    console.log(`Generating ${totalHours} hours of sample data (exact 1-hour intervals) for meter ${meter_id} (Pattern: ${meterPattern})`);
+    console.log(`Installation date: ${installationDate.toISOString()}`);
+    console.log(`End date: ${today.toISOString()}`);
     
-    console.log(`Generating ${totalDays + 1} days of sample data (${(totalDays + 1) * 24} hourly readings) for meter ${meter_id} (Pattern: ${meterPattern})`);
+    // Use a transaction for better performance
+    const insertReading = db.prepare(`
+        INSERT INTO meter_readings 
+        (meter_id, timestamp, l1_voltage, l1_current, l1_power, l1_energy, 
+         l2_voltage, l2_current, l2_power, l2_energy,
+         l3_voltage, l3_current, l3_power, l3_energy) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
     
-    for (let day = 0; day <= totalDays; day++) {
-        const currentDate = new Date(installationDate);
-        currentDate.setDate(currentDate.getDate() + day);
-        
-        for (let hour = 0; hour < 24; hour++) {
-            const timestamp = new Date(currentDate);
-            timestamp.setHours(hour, Math.floor(Math.random() * 60), Math.floor(Math.random() * 60));
+    const generateData = db.transaction(() => {
+        // Generate readings at exact 1-hour intervals
+        for (let hour = 0; hour <= totalHours; hour++) {
+            const timestamp = new Date(installationDate.getTime() + (hour * 60 * 60 * 1000));
             
+            // Ensure exact hour boundaries (00 minutes, 00 seconds, 000 milliseconds)
+            timestamp.setMinutes(0, 0, 0);
+
             // Generate completely different data based on meter pattern
             let baseVoltage, baseCurrent, basePower, energyIncrement;
             
@@ -1264,17 +1184,18 @@ app.post("/generate-sample-data", (req, res) => {
             }
             
             // Add time-of-day variation (higher during day, lower at night)
+            const currentHour = timestamp.getHours();
             let timeOfDayFactor;
-            if (hour >= 6 && hour <= 18) { // Daytime (6 AM - 6 PM)
+            if (currentHour >= 6 && currentHour <= 18) { // Daytime (6 AM - 6 PM)
                 timeOfDayFactor = 1.0;
-            } else if (hour >= 19 && hour <= 22) { // Evening (7 PM - 10 PM)
+            } else if (currentHour >= 19 && currentHour <= 22) { // Evening (7 PM - 10 PM)
                 timeOfDayFactor = meterPattern === 2 ? 1.4 : 0.8; // Residential peaks in evening
             } else { // Night (11 PM - 5 AM)
                 timeOfDayFactor = 0.3;
             }
             
             // Add weekday/weekend variation
-            const dayOfWeek = currentDate.getDay(); // 0 = Sunday, 6 = Saturday
+            const dayOfWeek = timestamp.getDay(); // 0 = Sunday, 6 = Saturday
             const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
             const dayFactor = isWeekend ? 0.7 : 1.0;
             
@@ -1285,8 +1206,7 @@ app.post("/generate-sample-data", (req, res) => {
             const finalFactor = timeOfDayFactor * dayFactor * randomFactor;
             
             // Calculate energy as cumulative value
-            const totalHours = (day * 24) + hour;
-            const baseEnergy = 50 + (energyIncrement * totalHours);
+            const baseEnergy = 50 + (energyIncrement * hour);
             
             const l1_voltage = baseVoltage + (Math.random() * 10 - 5);
             const l1_current = baseCurrent * finalFactor + (Math.random() * 4 - 2);
@@ -1303,15 +1223,9 @@ app.post("/generate-sample-data", (req, res) => {
             const l3_power = (basePower + 0.2) * finalFactor + (Math.random() * 1 - 0.5);
             const l3_energy = baseEnergy - 20 + (Math.random() * 20 - 10);
 
-            db.prepare(`
-                INSERT INTO meter_readings 
-                (meter_id, timestamp, l1_voltage, l1_current, l1_power, l1_energy, 
-                 l2_voltage, l2_current, l2_power, l2_energy,
-                 l3_voltage, l3_current, l3_power, l3_energy) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            `).run(
+            insertReading.run(
                 meter_id,
-                timestamp.toISOString(),
+                timestamp.toISOString(), // Use ISO string for consistent UTC storage
                 parseFloat(l1_voltage.toFixed(2)),
                 parseFloat(l1_current.toFixed(2)),
                 parseFloat(l1_power.toFixed(2)),
@@ -1326,10 +1240,16 @@ app.post("/generate-sample-data", (req, res) => {
                 parseFloat(l3_energy.toFixed(2))
             );
         }
-    }
+    });
 
-    console.log(`Successfully generated ${(totalDays + 1) * 24} hourly readings for meter ${meter_id}`);
-    res.redirect("/dashboard?meter_id=" + meter_id);
+    try {
+        generateData();
+        console.log(`Successfully generated ${totalHours} hourly readings at exact 1-hour intervals for meter ${meter_id}`);
+        res.redirect("/dashboard?meter_id=" + meter_id + "&data_generated=true");
+    } catch (error) {
+        console.error("Error generating sample data:", error);
+        res.status(500).send("Error generating sample data");
+    }
 });
 
 // Add this route to serve chart data
@@ -1421,10 +1341,22 @@ app.get("/chart-data", (req, res) => {
         labels: readings.map(r => {
             const date = new Date(r.timestamp);
             if (parseInt(days) <= 1) {
-                // For 1 day, show time
-                return date.toLocaleTimeString();
+                // For 1 day, show time in HH:MM format
+                return date.toLocaleTimeString('en-US', { 
+                    hour: '2-digit', 
+                    minute: '2-digit',
+                    hour12: false 
+                });
+            } else if (parseInt(days) <= 7) {
+                // For 1 week, show day and time
+                return date.toLocaleDateString('en-US', { 
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    hour12: false
+                });
             } else {
-                // For multiple days, show date
+                // For longer periods, show date only
                 return date.toLocaleDateString();
             }
         }),
@@ -1543,6 +1475,41 @@ app.get("/debug-meter-data", (req, res) => {
     res.json({
         user: req.user.username,
         meters: meterData
+    });
+});
+
+// Debug route to check timestamp intervals
+app.get("/debug-intervals", (req, res) => {
+    if (!req.user) {
+        return res.redirect("/login");
+    }
+
+    const { meter_id } = req.query;
+    
+    const readings = db.prepare(`
+        SELECT timestamp 
+        FROM meter_readings 
+        WHERE meter_id = ? 
+        ORDER BY timestamp 
+        LIMIT 100
+    `).all(meter_id);
+
+    const intervals = [];
+    for (let i = 1; i < readings.length; i++) {
+        const prev = new Date(readings[i-1].timestamp);
+        const curr = new Date(readings[i].timestamp);
+        const diffMs = curr - prev;
+        const diffHours = diffMs / (1000 * 60 * 60);
+        intervals.push({
+            from: readings[i-1].timestamp,
+            to: readings[i].timestamp,
+            diff_hours: diffHours
+        });
+    }
+
+    res.json({
+        total_readings: readings.length,
+        intervals: intervals
     });
 });
 
