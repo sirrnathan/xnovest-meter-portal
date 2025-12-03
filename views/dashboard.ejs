@@ -732,17 +732,17 @@
 
                 <!-- Filter Section -->
                 <div class="filter-section">
-                    <form action="/filter-meter-data" method="POST" class="filter-form">
+                    <form action="/filter-meter-data" method="GET" class="filter-form">
                         <input type="hidden" name="meter_id" value="<%= selectedMeter.id %>">
                         
                         <div style="margin-bottom: 15px;">
                             <strong>Quick Select:</strong>
                             <div class="quick-select-buttons">
-                                <button type="button" class="btn btn-secondary" onclick="setDateRange(1)">Today</button>
-                                <button type="button" class="btn btn-secondary" onclick="setDateRange(7)">Last 7 Days</button>
-                                <button type="button" class="btn btn-secondary" onclick="setDateRange(30)">Last 30 Days</button>
-                                <button type="button" class="btn btn-secondary" onclick="setDateRange(90)">Last 90 Days</button>
-                                <button type="button" class="btn btn-secondary" onclick="setDateRange(365)">Last Year</button>
+                                <button type="button" class="btn btn-secondary" onclick="setDateRangeAndSubmit(1)">Today</button>
+                                <button type="button" class="btn btn-secondary" onclick="setDateRangeAndSubmit(7)">Last 7 Days</button>
+                                <button type="button" class="btn btn-secondary" onclick="setDateRangeAndSubmit(30)">Last 30 Days</button>
+                                <button type="button" class="btn btn-secondary" onclick="setDateRangeAndSubmit(90)">Last 90 Days</button>
+                                <button type="button" class="btn btn-secondary" onclick="setDateRangeAndSubmit(365)">Last Year</button>
                             </div>
                         </div>
                         
@@ -763,7 +763,7 @@
                             </div>
                             <div class="form-group">
                                 <button type="submit" class="btn btn-primary">Apply Filter</button>
-                                <a href="/dashboard?meter_id=<%= selectedMeter.id %>" class="btn btn-secondary">Reset to Default</a>
+                                <a href="/dashboard?meter_id=<%= selectedMeter.id %>&start_date=&end_date=" class="btn btn-secondary">Reset to Default</a>
                             </div>
                         </div>
                     </form>
@@ -860,7 +860,7 @@
                             <div class="pagination-controls">
                                 <!-- First Page -->
                                 <% if (currentPage > 1) { %>
-                                    <a href="?meter_id=<%= selectedMeter.id %>&page=1<%= startDate && endDate ? '&start_date=' + startDate + '&end_date=' + endDate : '' %>" 
+                                    <a href="/filter-meter-data?meter_id=<%= selectedMeter.id %>&start_date=<%= startDate %>&end_date=<%= endDate %>&page=1" 
                                        class="btn-pagination">
                                         First
                                     </a>
@@ -872,7 +872,7 @@
                                 
                                 <!-- Previous Page -->
                                 <% if (currentPage > 1) { %>
-                                    <a href="?meter_id=<%= selectedMeter.id %>&page=<%= currentPage - 1 %><%= startDate && endDate ? '&start_date=' + startDate + '&end_date=' + endDate : '' %>" 
+                                    <a href="/filter-meter-data?meter_id=<%= selectedMeter.id %>&start_date=<%= startDate %>&end_date=<%= endDate %>&page=<%= currentPage - 1 %>" 
                                        class="btn-pagination">
                                         Previous
                                     </a>
@@ -894,7 +894,7 @@
                                                 <%= i %>
                                             </span>
                                         <% } else { %>
-                                            <a href="?meter_id=<%= selectedMeter.id %>&page=<%= i %><%= startDate && endDate ? '&start_date=' + startDate + '&end_date=' + endDate : '' %>" 
+                                            <a href="/filter-meter-data?meter_id=<%= selectedMeter.id %>&start_date=<%= startDate %>&end_date=<%= endDate %>&page=<%= i %>" 
                                                class="btn-pagination">
                                                 <%= i %>
                                             </a>
@@ -904,7 +904,7 @@
                                 
                                 <!-- Next Page -->
                                 <% if (currentPage < totalPages) { %>
-                                    <a href="?meter_id=<%= selectedMeter.id %>&page=<%= currentPage + 1 %><%= startDate && endDate ? '&start_date=' + startDate + '&end_date=' + endDate : '' %>" 
+                                    <a href="/filter-meter-data?meter_id=<%= selectedMeter.id %>&start_date=<%= startDate %>&end_date=<%= endDate %>&page=<%= currentPage + 1 %>" 
                                        class="btn-pagination">
                                         Next
                                     </a>
@@ -916,7 +916,7 @@
                                 
                                 <!-- Last Page -->
                                 <% if (currentPage < totalPages) { %>
-                                    <a href="?meter_id=<%= selectedMeter.id %>&page=<%= totalPages %><%= startDate && endDate ? '&start_date=' + startDate + '&end_date=' + endDate : '' %>" 
+                                    <a href="/filter-meter-data?meter_id=<%= selectedMeter.id %>&start_date=<%= startDate %>&end_date=<%= endDate %>&page=<%= totalPages %>" 
                                        class="btn-pagination">
                                         Last
                                     </a>
@@ -1188,14 +1188,17 @@
         });
     });
 
-    // Quick date range selection buttons
-    function setDateRange(days) {
+    // Quick date range selection and auto-submit
+    function setDateRangeAndSubmit(days) {
         const endDate = new Date();
         const startDate = new Date();
         startDate.setDate(startDate.getDate() - days);
         
         document.querySelector('input[name="start_date"]').value = startDate.toISOString().split('T')[0];
         document.querySelector('input[name="end_date"]').value = endDate.toISOString().split('T')[0];
+        
+        // Submit the form
+        document.querySelector('.filter-form').submit();
     }
 </script>
 </body>

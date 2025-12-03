@@ -1009,13 +1009,13 @@ app.post("/delete-meter", (req, res) => {
     res.redirect("/dashboard")
 })
 
-// Filter meter data
-app.post("/filter-meter-data", (req, res) => {
+// Filter meter data - CHANGED FROM POST TO GET
+app.get("/filter-meter-data", (req, res) => {
     if (!req.user) {
         return res.redirect("/login");
     }
 
-    const { meter_id, start_date, end_date } = req.body;
+    const { meter_id, start_date, end_date, page = 1 } = req.query;
 
     // Check if user is admin
     const isAdmin = isUserAdmin(req.user.userid);
@@ -1044,9 +1044,9 @@ app.post("/filter-meter-data", (req, res) => {
     }
     
     // Pagination variables
-    const page = 1; // Always start at page 1 when filtering
+    const currentPage = parseInt(page) || 1;
     const limit = 20;
-    const offset = 0;
+    const offset = (currentPage - 1) * limit;
     let totalRecords = 0;
     let totalPages = 0;
     
@@ -1086,7 +1086,7 @@ app.post("/filter-meter-data", (req, res) => {
         isAdmin: isAdmin,
         allUsers: allUsers,
         // Pagination data
-        currentPage: page,
+        currentPage: currentPage,
         totalPages: totalPages,
         totalRecords: totalRecords,
         limit: limit
